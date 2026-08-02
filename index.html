@@ -1,0 +1,380 @@
+
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Samsung E&A Demo</title>
+<style>
+html, body {
+  margin: 0;
+  height: 100%;
+  font-family: Arial, sans-serif;
+  color: #fff;
+  overflow: hidden;
+}
+body {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background: #d83c4f;
+  transition: .08s;
+}
+
+.top-bar .logo{
+    position:absolute;
+    top:6.5%;
+    left:50%;
+    transform:translateX(-50%);
+    width:50%;      /* 크기 조절 */
+    height:auto;
+    display:block;
+    pointer-events:none;
+    user-select:none;
+}
+.phone{
+    position:absolute;
+    left:50%;
+    top:12.5%;           /* 기존 bottom 방식 대신 위에서 배치 */
+    transform:translateX(-50%);
+    font-size:15px;     /* 18px → 15px */
+    white-space:nowrap;
+}
+
+.top-bar .cam {
+  position: absolute;
+  right: 15%;
+  top: 6.5%;
+}
+
+
+.card {
+  position: relative;
+  margin-top: -32.5%;
+  z-index: 1;
+  width: 85%;
+  max-width: 85%;
+  text-align: center;
+}
+
+.date {
+  margin-top: 20px;
+  font-size: 30px;
+  letter-spacing: 4px;
+}
+.time {
+  font-size: 64px;
+  letter-spacing: 1px;
+
+}
+.lock {
+  width: 72px;
+  height: 72px;
+  margin: 12px auto 18px;
+  font-size: 38px;
+
+  
+  display:flex;
+  align-items:center;
+  justify-content:center;
+
+}
+.state {
+  font-size: 24px;
+}
+.apply {
+  font-size: 18px;
+  margin-top: 8px;
+  letter-spacing: 3px;
+}
+
+/* 하단 바 및 메뉴 스타일 수정 */
+.bottom {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 22%;
+  z-index: 10;
+}
+
+.bottom-version {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 5%;
+  z-index: 10;
+}
+
+
+.menu {
+  display: flex;
+  justify-content: space-around;
+  font-size: 14px;
+  margin-bottom: 5%;
+}
+.menu-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px; /* 아이콘과 글자 사이 간격 확보 */
+}
+.menu-item span {
+  font-size: 22px;
+  
+}
+
+.bot-item{
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    color:#fff;
+    font-size:14px;
+}
+
+.bot-icon{
+    width:36px;
+    height:36px;
+    object-fit:contain;
+    margin-bottom:8px;
+    display:block;
+}
+
+
+.bottom-restricted-title {
+   position: fixed;
+  left: 5%;
+  right: 0;
+  bottom: 20%;
+  z-index: 10;
+  font-size: 14px;  
+}
+
+.bottom-restricted {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 10%;
+  z-index: 10;
+
+  display: flex;
+  justify-content: space-around; /* 가로로 균등 배치 */
+  align-items: center;
+}
+
+
+
+
+
+.ver {
+  font-size: 12px;
+  text-align: center;
+  margin-bottom: 0%;
+  color: #ddd;
+}
+
+
+/* 배경 */
+.popup{
+    position:fixed;
+    left:0;
+    top:0;
+    width:100%;
+    height:100%;
+    background:rgba(0,0,0,.35);
+    display:none;
+    justify-content:center;
+    align-items:center;
+    z-index:9999;
+}
+
+/* 흰색 박스 */
+.popup-box{
+    width:74%;
+    max-width:620px;
+    background:#fff;
+    border-radius:22px;
+    overflow:hidden;
+    box-shadow:0 8px 25px rgba(0,0,0,.25);
+}
+
+/* 메시지 */
+.popup-text{
+    padding:55px 25px 45px;
+    text-align:center;
+    font-size:17px;   /* 기존 38px → 24px */
+    color:#222;
+}
+
+/* 구분선 */
+.popup-line{
+    height:1px;
+    background:#e3e3e3;
+    margin:0 28px;
+}
+
+/* 확인 버튼 */
+#popupOk{
+    display:block;
+    width:150px;      /* 기존 260px → 150px */
+    height:52px;      /* 기존 84px → 52px */
+    margin:24px auto 28px;
+    border:none;
+    border-radius:10px;
+    background:#2c9ad3;
+    color:#fff;
+    font-size:18px;   /* 기존 36px → 18px */
+    cursor:pointer;
+}
+
+#popupOk:active{
+    background:#228bc2;
+}
+
+</style>
+</head>
+<body>
+
+
+
+
+<!-- 상단 막 -->
+<div class="top-bar">
+
+    <div class="logo-wrap">
+        <img class="logo" src="https://faagffxa6sskln.github.io/mobilesecurity/logo_ena.png" alt="SAMSUNG E&A">
+        <img class="cam" src="https://faagffxa6sskln.github.io/mobilesecurity/ico_camera.png" width="7.5%">
+    </div>
+
+    <div class="phone">
+		<span class="white-icon">☎</span> 01083708642
+	</div>
+</div>
+
+<!-- 중앙 요소 -->
+<div class="card">
+  <div class="date" id="date"></div>
+  <div class="time" id="time"></div>
+
+  <!-- 버튼 -->
+  <div class="lock" id="lockBtn">
+    <img src="https://faagffxa6sskln.github.io/mobilesecurity/lock_mig.png"
+         width="100" height="100">
+  </div>
+
+  <div class="state">보안정책 적용</div>
+  <div class="apply" id="apply"></div>
+</div>
+
+<!-- 팝업 -->
+<div id="popup" class="popup">
+  <div class="popup-box">
+    <div class="popup-text"><font-size="10px">
+      녹화된 화면이 아닙니다.</font>
+    </div>
+
+    <div class="popup-line"></div>
+
+    <button id="popupOk">확인</button>
+  </div>
+</div>
+
+<!-- 하단 막 -->
+<div class="bottom">
+  <div class="menu">
+
+    <div class="bot-item">
+      <img src="https://faagffxa6sskln.github.io/mobilesecurity/btn_notice.png" class="bot-icon" alt="">
+      <div>공지/약관</div>
+    </div>
+
+    <div class="bot-item">
+      <img src="https://faagffxa6sskln.github.io/mobilesecurity/btn_help_white.png" class="bot-icon" alt="">
+      <div>헬프데스크</div>
+    </div>
+
+    <div class="bot-item">
+      <img src="https://faagffxa6sskln.github.io/mobilesecurity/btn_refresh.png" class="bot-icon" alt="">
+      <div>Refresh</div>
+    </div>
+
+    <div class="bot-item">
+      <img src="https://faagffxa6sskln.github.io/mobilesecurity/btn_del_white.png" class="bot-icon" alt="">
+      <div>에이전트삭제</div>
+    </div>
+
+  </div>
+  
+
+
+  
+
+
+</div>
+
+<!-- 하단 막2 -->
+<div class="bottom-restricted-title">제한된 기능</div>
+
+<div class="bottom-restricted">
+	<div class="bot-item">
+	      <img src="https://faagffxa6sskln.github.io/mobilesecurity/ico_camera.png" class="bot-icon" alt="">
+      <div>카메라</div>
+    </div>
+	<div class="bot-item">
+	      <img src="https://faagffxa6sskln.github.io/mobilesecurity/ico_usb.png" class="bot-icon" alt="">
+      <div>USB</div>
+    </div>
+	<div class="bot-item">
+	      <img src="https://faagffxa6sskln.github.io/mobilesecurity/ico_sd.png" class="bot-icon" alt="">
+      <div>저장매체</div>
+    </div>
+<div class="bot-item">
+	      
+      <div></div>
+    </div>
+	
+</div>
+
+<div class = "bottom-version">
+		<div class="ver">삼성 모바일보안 4.0.49</div>
+	</div>
+</div>
+
+<script>
+function u(){
+  let n=new Date(), w=["일","월","화","수","목","금","토"];
+  date.textContent=`${n.getFullYear()}-${String(n.getMonth()+1).padStart(2,"0")}-${String(n.getDate()).padStart(2,"0")}(${w[n.getDay()]})`;
+  time.textContent=`${String(n.getHours()).padStart(2,"0")} : ${String(n.getMinutes()).padStart(2,"0")} : ${String(n.getSeconds()).padStart(2,"0")}`;
+
+apply.textContent =
+`적용시간∶${n.getFullYear()}-${String(n.getMonth()+1).padStart(2,"0")}-${String(n.getDate()).padStart(2,"0")} 06:15`;
+
+}
+u();
+setInterval(u,1000);
+
+let r=true;
+setInterval(() => {
+  document.body.style.backgroundImage = `url('${r ? "https://faagffxa6sskln.github.io/mobilesecurity/background_lock_yellow.png" : "https://faagffxa6sskln.github.io/mobilesecurity/background_lock3.png"}')`;
+  document.body.style.backgroundSize = "100% 100%";    // 화면 크기에 맞게 강제 늘림
+  document.body.style.backgroundPosition = "center";  // 가운데 정렬
+  document.body.style.backgroundRepeat = "no-repeat"; // 반복 안 함
+  r = !r;
+}, 500);
+
+
+
+const popup = document.getElementById("popup");
+
+document.getElementById("lockBtn").addEventListener("click", () => {
+    popup.style.display = "flex";
+});
+
+document.getElementById("popupOk").addEventListener("click", () => {
+    popup.style.display = "none";
+});
+
+
+</script>
+</body>
+</html>
