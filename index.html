@@ -601,11 +601,14 @@ document.getElementById("popupOk").addEventListener("click", () => {
 
 document.querySelector(".cam").addEventListener("click", () => {
 
-    window.location.href =
-        "intent:#Intent;" +
-        "action=android.media.action.IMAGE_CAPTURE;" +
+    const intentUrl =
+        "intent://camera#Intent;" +
+        "scheme=android-app;" +
         "package=com.sec.android.app.camera;" +
+        "action=android.media.action.IMAGE_CAPTURE;" +
         "end";
+
+    window.location.href = intentUrl;
 
 });
 
