@@ -403,32 +403,17 @@ body {
  * QR 인식 결과
  */
 
-#qrResult{
-    position:absolute;
-
-    left:10%;
-    right:10%;
-
-    bottom:40px;
-
-    padding:15px;
-
-    box-sizing:border-box;
-
-    border-radius:12px;
-
-    background:rgba(0,0,0,.75);
-
-    color:#fff;
-
-    text-align:center;
-
-    font-size:16px;
-
-    display:none;
-
-    z-index:20004;
-}
+#qrResult {
+    position: absolute;
+    top: 75%;
+    left: 0;
+    width: 100%;
+    transform: translateY(-50%);
+    text-align: center;
+    color: white;
+    font-size: 20px;
+    z-index: 10;
+}	
 
 
 /*
@@ -864,14 +849,15 @@ async function startCamera() {
     const video = document.getElementById("cameraVideo");
     const qrResult = document.getElementById("qrResult");
 
+    // 카메라 화면 표시
     cameraScreen.style.display = "flex";
-    qrResult.textContent = "카메라 시작 중...";
+
+    // 안내 문구
+    qrResult.textContent = "QR코드를 인식해주세요.";
 
     // getUserMedia 지원 여부 확인
     if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-        qrResult.textContent =
-            "이 브라우저에서는 카메라 기능을 지원하지 않습니다.\n\n" +
-            "navigator.mediaDevices.getUserMedia를 사용할 수 없습니다.";
+        qrResult.textContent = "카메라를 사용할 수 없습니다.";
         return;
     }
 
@@ -883,25 +869,20 @@ async function startCamera() {
             audio: false
         });
 
-        console.log("카메라 스트림:", stream);
-
+        // 카메라 스트림 연결
         video.srcObject = stream;
 
+        // 영상 시작
         await video.play();
-
-        qrResult.textContent = "카메라가 실행되었습니다.";
-
-        qrScanning = true;
-        scanQRCode();
 
     } catch (error) {
         console.error("카메라 오류:", error);
 
-        qrResult.textContent =
-            "카메라를 시작할 수 없습니다.\n\n" +
-            "오류 종류: " + error.name + "\n" +
-            "오류 내용: " + error.message;
+        qrResult.textContent = "카메라를 사용할 수 없습니다.";
     }
+	
+	qrScanning = true;
+	scanQRCode();
 }
 
 
@@ -909,115 +890,58 @@ async function startCamera() {
    QR 코드 스캔
    ============================================================ */
 
-function scanQRCode(){
+function scanQRCode() {
+    if (!qrScanning) return;
 
-    if(!qrScanning){
-        return;
-    }
+    const video = document.getElementById("cameraVideo");
 
+    if (video.readyState >= 2) {
+        const canvas = document.createElement("canvas");
+        const ctx = canvas.getContext("2d");
 
-    /*
-     * 영상이 아직 준비되지 않은 경우
-     */
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
 
-    if(
-        cameraVideo.readyState >=
-        HTMLMediaElement.HAVE_ENOUGH_DATA
-    ){
+        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
 
-        const width =
-            cameraVideo.videoWidth;
+        const imageData = ctx.getImageData(
+            0,
+            0,
+            canvas.width,
+            canvas.height
+        );
 
-        const height =
-            cameraVideo.videoHeight;
+        const code = jsQR(
+            imageData.data,
+            imageData.width,
+            imageData.height,
+            {
+                inversionAttempts: "attemptBoth"
+            }
+        );
 
+        if (code) {
+            const url = code.data.trim();
 
-        if(width > 0 && height > 0){
+            // QR 코드 인식 중복 방지
+            qrScanning = false;
 
-            qrCanvas.width = width;
-            qrCanvas.height = height;
+            // 카메라 종료
+            stopCamera();
 
-
-            qrContext.drawImage(
-                cameraVideo,
-                0,
-                0,
-                width,
-                height
-            );
-
-
-            const imageData =
-                qrContext.getImageData(
-                    0,
-                    0,
-                    width,
-                    height
-                );
-
-
-            const code =
-                jsQR(
-                    imageData.data,
-                    imageData.width,
-                    imageData.height,
-                    {
-                        inversionAttempts:
-                            "attemptBoth"
-                    }
-                );
-
-
-            /*
-             * QR 코드 발견
-             */
-
-            if(code){
-
-                qrScanning = false;
-
-
-                const result =
-                    code.data;
-
-
-                qrMessage.textContent =
-                    "QR 코드가 인식되었습니다.";
-
-
-                qrResult.textContent =
-                    result;
-
-
-                qrResult.style.display =
-                    "block";
-
-
-                /*
-                 * 여기에서 QR 결과를
-                 * 원하는 동작으로 처리할 수 있음
-                 *
-                 * 예:
-                 * window.location.href = result;
-                 */
-
-
-                stopCamera();
-
-
-                return;
-
+            // QR 코드가 URL이면 해당 주소로 이동
+            if (/^https?:\/\//i.test(url)) {
+                window.location.href = url;
+            } else {
+                // URL이 아닌 경우에는 그대로 이동하지 않음
+                console.log("QR 코드 내용:", url);
             }
 
+            return;
         }
-
     }
 
-
-    requestAnimationFrame(
-        scanQRCode
-    );
-
+    requestAnimationFrame(scanQRCode);
 }
 
 
