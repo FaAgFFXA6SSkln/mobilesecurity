@@ -859,79 +859,49 @@ const qrContext =
    카메라 시작
    ============================================================ */
 
-async function startCamera(){
+async function startCamera() {
+    const cameraScreen = document.getElementById("cameraScreen");
+    const video = document.getElementById("cameraVideo");
+    const qrResult = document.getElementById("qrResult");
+
+    cameraScreen.style.display = "flex";
+    qrResult.textContent = "카메라 시작 중...";
+
+    // getUserMedia 지원 여부 확인
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        qrResult.textContent =
+            "이 브라우저에서는 카메라 기능을 지원하지 않습니다.\n\n" +
+            "navigator.mediaDevices.getUserMedia를 사용할 수 없습니다.";
+        return;
+    }
 
     try {
+        const stream = await navigator.mediaDevices.getUserMedia({
+            video: {
+                facingMode: "environment"
+            },
+            audio: false
+        });
 
-        /*
-         * 후면 카메라 요청
-         */
+        console.log("카메라 스트림:", stream);
 
-        cameraStream =
-            await navigator.mediaDevices.getUserMedia({
+        video.srcObject = stream;
 
-                video: {
-                    facingMode: {
-                        ideal: "environment"
-                    },
+        await video.play();
 
-                    width: {
-                        ideal: 1920
-                    },
-
-                    height: {
-                        ideal: 1080
-                    }
-
-                },
-
-                audio: false
-
-            });
-
-
-        cameraVideo.srcObject =
-            cameraStream;
-
-
-        await cameraVideo.play();
-
-
-        cameraScreen.style.display =
-            "block";
-
-
-        qrMessage.textContent =
-            "QR 코드를 사각형 안에 맞춰주세요.";
-
-
-        qrResult.style.display =
-            "none";
-
+        qrResult.textContent = "카메라가 실행되었습니다.";
 
         qrScanning = true;
-
-
         scanQRCode();
 
+    } catch (error) {
+        console.error("카메라 오류:", error);
 
+        qrResult.textContent =
+            "카메라를 시작할 수 없습니다.\n\n" +
+            "오류 종류: " + error.name + "\n" +
+            "오류 내용: " + error.message;
     }
-    catch(error){
-
-        console.error(
-            "카메라 실행 오류:",
-            error
-        );
-
-
-        alert(
-            "카메라를 사용할 수 없습니다.\n\n" +
-            "카메라 권한을 확인해주세요.\n\n" +
-            error.name
-        );
-
-    }
-
 }
 
 
