@@ -5,7 +5,11 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Samsung E&A Demo</title>
 
+<!-- QR 코드 인식 라이브러리 -->
+<script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
+
 <style>
+
 html, body {
   margin: 0;
   height: 100%;
@@ -59,11 +63,7 @@ body {
   top: 6.5%;
   width:10%;
   height:auto;
-
-  /* 클릭 가능 */
   cursor:pointer;
-
-  /* 다른 요소보다 위에 표시 */
   z-index:20;
 }
 
@@ -179,11 +179,11 @@ body {
 
 .bottom-restricted-title {
    position: fixed;
-  left: 5%;
-  right: 0;
-  bottom: 19%;
-  z-index: 10;
-  font-size: 14px;
+   left: 5%;
+   right: 0;
+   bottom: 19%;
+   z-index: 10;
+   font-size: 14px;
 }
 
 .bottom-restricted {
@@ -277,6 +277,196 @@ body {
 
 #popupOk:active{
     background:#228bc2;
+}
+
+
+/* ============================================================
+   QR 카메라 화면
+   ============================================================ */
+
+#cameraScreen{
+    position:fixed;
+    left:0;
+    top:0;
+    width:100%;
+    height:100%;
+
+    background:#000;
+
+    display:none;
+
+    z-index:20000;
+}
+
+
+/* 카메라 영상 */
+
+#cameraVideo{
+    position:absolute;
+    left:0;
+    top:0;
+
+    width:100%;
+    height:100%;
+
+    object-fit:cover;
+
+    background:#000;
+}
+
+
+/*
+ * QR 인식 영역
+ */
+
+#qrGuide{
+    position:absolute;
+
+    width:65vw;
+    height:65vw;
+
+    max-width:420px;
+    max-height:420px;
+
+    left:50%;
+    top:50%;
+
+    transform:translate(-50%, -50%);
+
+    box-sizing:border-box;
+
+    border:3px solid rgba(255,255,255,.9);
+
+    border-radius:12px;
+
+    z-index:20002;
+
+    pointer-events:none;
+}
+
+
+/*
+ * QR 안내 문구
+ */
+
+#qrMessage{
+    position:absolute;
+
+    left:0;
+    right:0;
+
+    top:calc(50% + min(32.5vw, 210px) + 25px);
+
+    text-align:center;
+
+    font-size:17px;
+
+    color:#fff;
+
+    text-shadow:
+        0 1px 3px #000,
+        0 0 5px #000;
+
+    z-index:20003;
+}
+
+
+/*
+ * 카메라 닫기 버튼
+ */
+
+#cameraClose{
+    position:absolute;
+
+    top:25px;
+    right:20px;
+
+    width:48px;
+    height:48px;
+
+    border:0;
+    border-radius:50%;
+
+    background:rgba(0,0,0,.55);
+
+    color:#fff;
+
+    font-size:28px;
+
+    z-index:20005;
+
+    cursor:pointer;
+}
+
+
+/*
+ * QR 인식 결과
+ */
+
+#qrResult{
+    position:absolute;
+
+    left:10%;
+    right:10%;
+
+    bottom:40px;
+
+    padding:15px;
+
+    box-sizing:border-box;
+
+    border-radius:12px;
+
+    background:rgba(0,0,0,.75);
+
+    color:#fff;
+
+    text-align:center;
+
+    font-size:16px;
+
+    display:none;
+
+    z-index:20004;
+}
+
+
+/*
+ * QR 가이드 애니메이션
+ */
+
+#qrGuide::after{
+    content:"";
+
+    position:absolute;
+
+    left:5%;
+    right:5%;
+
+    top:50%;
+
+    height:2px;
+
+    background:rgba(255,0,0,.8);
+
+    animation:qrScan 1.8s linear infinite;
+}
+
+
+@keyframes qrScan{
+
+    0%{
+        transform:translateY(-120px);
+    }
+
+    50%{
+        transform:translateY(120px);
+    }
+
+    100%{
+        transform:translateY(-120px);
+    }
+
 }
 
 </style>
@@ -512,7 +702,45 @@ body {
 </div>
 
 
+<!-- ============================================================
+     카메라 화면
+     ============================================================ -->
+
+<div id="cameraScreen">
+
+    <!-- 카메라 영상 -->
+    <video
+        id="cameraVideo"
+        autoplay
+        muted
+        playsinline
+    ></video>
+
+
+    <!-- QR 인식 영역 -->
+    <div id="qrGuide"></div>
+
+
+    <!-- 안내 -->
+    <div id="qrMessage">
+        QR 코드를 사각형 안에 맞춰주세요.
+    </div>
+
+
+    <!-- 닫기 -->
+    <button id="cameraClose">
+        ×
+    </button>
+
+
+    <!-- QR 결과 -->
+    <div id="qrResult"></div>
+
+</div>
+
+
 <script>
+
 
 /* ============================================================
    날짜 / 시간
@@ -590,27 +818,297 @@ document.getElementById("popupOk").addEventListener("click", () => {
 
 
 /* ============================================================
-   카메라 버튼
+   QR 카메라
    ============================================================ */
 
+const cameraScreen =
+    document.getElementById("cameraScreen");
+
+const cameraVideo =
+    document.getElementById("cameraVideo");
+
+const cameraClose =
+    document.getElementById("cameraClose");
+
+const qrMessage =
+    document.getElementById("qrMessage");
+
+const qrResult =
+    document.getElementById("qrResult");
+
+
+let cameraStream = null;
+
+let qrScanning = false;
+
+
 /*
- * 갤럭시 S21에서
- * 상단 카메라 아이콘 클릭
- * → 삼성 기본 카메라 앱 실행
+ * QR 인식용 canvas
  */
 
-document.querySelector(".cam").addEventListener("click", () => {
+const qrCanvas =
+    document.createElement("canvas");
 
-    const intentUrl =
-        "intent://camera#Intent;" +
-        "scheme=android-app;" +
-        "package=com.sec.android.app.camera;" +
-        "action=android.media.action.IMAGE_CAPTURE;" +
-        "end";
+const qrContext =
+    qrCanvas.getContext("2d", {
+        willReadFrequently: true
+    });
 
-    window.location.href = intentUrl;
 
-});
+/* ============================================================
+   카메라 시작
+   ============================================================ */
+
+async function startCamera(){
+
+    try {
+
+        /*
+         * 후면 카메라 요청
+         */
+
+        cameraStream =
+            await navigator.mediaDevices.getUserMedia({
+
+                video: {
+                    facingMode: {
+                        ideal: "environment"
+                    },
+
+                    width: {
+                        ideal: 1920
+                    },
+
+                    height: {
+                        ideal: 1080
+                    }
+
+                },
+
+                audio: false
+
+            });
+
+
+        cameraVideo.srcObject =
+            cameraStream;
+
+
+        await cameraVideo.play();
+
+
+        cameraScreen.style.display =
+            "block";
+
+
+        qrMessage.textContent =
+            "QR 코드를 사각형 안에 맞춰주세요.";
+
+
+        qrResult.style.display =
+            "none";
+
+
+        qrScanning = true;
+
+
+        scanQRCode();
+
+
+    }
+    catch(error){
+
+        console.error(
+            "카메라 실행 오류:",
+            error
+        );
+
+
+        alert(
+            "카메라를 사용할 수 없습니다.\n\n" +
+            "카메라 권한을 확인해주세요.\n\n" +
+            error.name
+        );
+
+    }
+
+}
+
+
+/* ============================================================
+   QR 코드 스캔
+   ============================================================ */
+
+function scanQRCode(){
+
+    if(!qrScanning){
+        return;
+    }
+
+
+    /*
+     * 영상이 아직 준비되지 않은 경우
+     */
+
+    if(
+        cameraVideo.readyState >=
+        HTMLMediaElement.HAVE_ENOUGH_DATA
+    ){
+
+        const width =
+            cameraVideo.videoWidth;
+
+        const height =
+            cameraVideo.videoHeight;
+
+
+        if(width > 0 && height > 0){
+
+            qrCanvas.width = width;
+            qrCanvas.height = height;
+
+
+            qrContext.drawImage(
+                cameraVideo,
+                0,
+                0,
+                width,
+                height
+            );
+
+
+            const imageData =
+                qrContext.getImageData(
+                    0,
+                    0,
+                    width,
+                    height
+                );
+
+
+            const code =
+                jsQR(
+                    imageData.data,
+                    imageData.width,
+                    imageData.height,
+                    {
+                        inversionAttempts:
+                            "attemptBoth"
+                    }
+                );
+
+
+            /*
+             * QR 코드 발견
+             */
+
+            if(code){
+
+                qrScanning = false;
+
+
+                const result =
+                    code.data;
+
+
+                qrMessage.textContent =
+                    "QR 코드가 인식되었습니다.";
+
+
+                qrResult.textContent =
+                    result;
+
+
+                qrResult.style.display =
+                    "block";
+
+
+                /*
+                 * 여기에서 QR 결과를
+                 * 원하는 동작으로 처리할 수 있음
+                 *
+                 * 예:
+                 * window.location.href = result;
+                 */
+
+
+                stopCamera();
+
+
+                return;
+
+            }
+
+        }
+
+    }
+
+
+    requestAnimationFrame(
+        scanQRCode
+    );
+
+}
+
+
+/* ============================================================
+   카메라 종료
+   ============================================================ */
+
+function stopCamera(){
+
+    qrScanning = false;
+
+
+    if(cameraStream){
+
+        cameraStream
+            .getTracks()
+            .forEach(track => {
+                track.stop();
+            });
+
+        cameraStream = null;
+
+    }
+
+
+    cameraVideo.srcObject =
+        null;
+
+
+    cameraScreen.style.display =
+        "none";
+
+}
+
+
+/* ============================================================
+   상단 카메라 버튼
+   ============================================================ */
+
+document
+    .querySelector(".cam")
+    .addEventListener("click", () => {
+
+        startCamera();
+
+    });
+
+
+/* ============================================================
+   카메라 닫기
+   ============================================================ */
+
+cameraClose.addEventListener(
+    "click",
+    () => {
+
+        stopCamera();
+
+    }
+);
+
 
 </script>
 
